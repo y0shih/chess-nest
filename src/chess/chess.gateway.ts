@@ -32,9 +32,9 @@ export class ChessGateway {
   @SubscribeMessage('joinGame')
   handleJoinGame(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { gameId?: string },
+    @MessageBody() payload: { gameId?: string; userId?: string },
   ) {
-    const gameId = this.chessService.joinGame(client, payload.gameId);
+    const gameId = this.chessService.joinGame(client, payload.gameId, payload.userId);
     void client.join(gameId);
     this.server
       .to(gameId)
@@ -44,14 +44,14 @@ export class ChessGateway {
   }
 
   @SubscribeMessage('move')
-  handleMove(
+  async handleMove(
     @ConnectedSocket() client: Socket,
     @MessageBody()
     move: string | { from: string; to: string; promotion?: string },
   ) {
     const gameId = this.chessService.getGameIdByClientId(client.id);
     if (gameId) {
-      const result = this.chessService.makeMove(gameId, client.id, move);
+      const result = await this.chessService.makeMove(gameId, client.id, move);
       if (result.success) {
         this.server
           .to(gameId)
